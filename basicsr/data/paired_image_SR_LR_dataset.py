@@ -246,8 +246,8 @@ class PairedStereoImageDataset(data.Dataset):
             self.file_client = FileClient(
                 self.io_backend_opt.pop('type'), **self.io_backend_opt)
 
-        gt_path_L = os.path.join(self.gt_folder, self.gt_files[index], 'hr0.png')
-        gt_path_R = os.path.join(self.gt_folder, self.gt_files[index], 'hr1.png')
+        gt_path_L = os.path.join(self.gt_folder, self.gt_files[index])
+        gt_path_R = os.path.join(self.gt_folder, self.gt_files[index])
 
         img_bytes = self.file_client.get(gt_path_L, 'gt')
         try:
@@ -261,8 +261,8 @@ class PairedStereoImageDataset(data.Dataset):
         except:
             raise Exception("gt path {} not working".format(gt_path_R))
 
-        lq_path_L = os.path.join(self.lq_folder, self.lq_files[index], 'lr0.png')
-        lq_path_R = os.path.join(self.lq_folder, self.lq_files[index], 'lr1.png')
+        lq_path_L = os.path.join(self.lq_folder, self.lq_files[index])
+        lq_path_R = os.path.join(self.lq_folder, self.lq_files[index])
 
         # lq_path = self.paths[index]['lq_path']
         # print(', lq path', lq_path)

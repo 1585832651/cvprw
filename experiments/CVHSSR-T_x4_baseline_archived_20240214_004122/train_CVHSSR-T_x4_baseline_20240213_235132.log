@@ -1,0 +1,988 @@
+2024-02-13 23:51:32,884 INFO: 
+                ____                _       _____  ____
+               / __ ) ____ _ _____ (_)_____/ ___/ / __ \
+              / __  |/ __ `// ___// // ___/\__ \ / /_/ /
+             / /_/ // /_/ /(__  )/ // /__ ___/ // _, _/
+            /_____/ \__,_//____//_/ \___//____//_/ |_|
+     ______                   __   __                 __      __
+    / ____/____   ____   ____/ /  / /   __  __ _____ / /__   / /
+   / / __ / __ \ / __ \ / __  /  / /   / / / // ___// //_/  / /
+  / /_/ // /_/ // /_/ // /_/ /  / /___/ /_/ // /__ / /<    /_/
+  \____/ \____/ \____/ \____/  /_____/\____/ \___//_/|_|  (_)
+    
+Version Information: 
+	BasicSR: 1.2.0+50cb149
+	PyTorch: 1.11.0+cu113
+	TorchVision: 0.12.0+cu113
+2024-02-13 23:51:32,884 INFO: 
+  name: CVHSSR-T_x4_baseline
+  model_type: ImageRestorationModel
+  scale: 4
+  num_gpu: 1
+  manual_seed: 10
+  datasets:[
+    train:[
+      name: Flickr1024-sr-train_baseline_debug
+      type: PairedStereoImageDataset
+      dataroot_gt: ./dataset/Train/HR
+      dataroot_lq: ./dataset/Train/LR_x4
+      io_backend:[
+        type: disk
+      ]
+      gt_size_h: 120
+      gt_size_w: 360
+      use_hflip: True
+      use_vflip: True
+      use_rot: False
+      flip_RGB: True
+      use_shuffle: True
+      num_worker_per_gpu: 8
+      batch_size_per_gpu: 32
+      dataset_enlarge_ratio: 1
+      prefetch_mode: None
+      phase: train
+      scale: 4
+    ]
+    val:[
+      name: Flickr1024-sr-test_baseline
+      type: PairedStereoImageDataset
+      dataroot_gt: ./dataset/val/HR
+      dataroot_lq: ./dataset/val/LR_x4
+      io_backend:[
+        type: disk
+      ]
+      phase: val
+      scale: 4
+    ]
+  ]
+  network_g:[
+    type: CVHSSR
+    up_scale: 4
+    width: 48
+    num_blks: 16
+    drop_path_rate: 0
+    train_size: [1, 6, 30, 90]
+    drop_out_rate: 0.0
+  ]
+  path:[
+    pretrain_network_g: None
+    strict_load_g: True
+    resume_state: None
+    root: /root/autodl-tmp/CVHSSR
+    experiments_root: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline
+    models: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline/models
+    training_states: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline/training_states
+    log: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline
+    visualization: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline/visualization
+  ]
+  train:[
+    optim_g:[
+      type: Lion
+      lr: 0.0001
+      weight_decay: 0.0
+      betas: [0.9, 0.9]
+    ]
+    scheduler:[
+      type: TrueCosineAnnealingLR
+      T_max: 200000
+      eta_min: 1e-08
+    ]
+    total_iter: 200000
+    warmup_iter: -1
+    mixup: False
+    pixel_opt:[
+      type: ComposeLoss
+      loss_weight: 0.01
+      reduction: mean
+    ]
+  ]
+  val:[
+    val_freq: 100.0
+    save_img: False
+    trans_num: 1
+    max_minibatch: 1
+    metrics:[
+      psnr:[
+        type: calculate_psnr
+        crop_border: 0
+        test_y_channel: False
+      ]
+      ssim:[
+        type: calculate_skimage_ssim
+      ]
+    ]
+  ]
+  logger:[
+    print_freq: 50
+    save_checkpoint_freq: 10000.0
+    use_tb_logger: True
+    wandb:[
+      project: CVHSSR_T_baseline
+      resume_id: None
+    ]
+  ]
+  dist_params:[
+    backend: nccl
+    port: 29500
+  ]
+  is_train: True
+  dist: True
+  rank: 0
+  world_size: 2
+
+2024-02-13 23:51:39,914 INFO: Use wandb logger with id=to0ufxe0; project=CVHSSR_T_baseline.
+2024-02-13 23:51:39,919 INFO: Dataset PairedStereoImageDataset - Flickr1024-sr-train_baseline_debug is created.
+2024-02-13 23:51:39,919 INFO: Training statistics:
+	Number of train images: 1600
+	Dataset enlarge ratio: 1
+	Batch size per gpu: 32
+	World size (gpu number): 2
+	Require iter number per epoch: 25
+	Total epochs: 8000; iters: 200000.
+2024-02-13 23:51:39,920 INFO: Dataset PairedStereoImageDataset - Flickr1024-sr-test_baseline is created.
+2024-02-13 23:51:39,920 INFO: Number of val images/folders in Flickr1024-sr-test_baseline: 8
+2024-02-13 23:51:44,145 INFO: Network: DistributedDataParallel - CVHSSR, with parameters: 678,000
+2024-02-13 23:51:44,146 INFO: CVHSSR(
+  (intro): Conv2d(3, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+  (body): MySequential(
+    (0): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (1): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (2): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (3): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (4): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (5): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (6): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (7): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (8): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (9): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (10): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (11): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (12): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (13): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (14): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+    (15): DropPath(
+      (module): CHIMBSR(
+        (blk): CHIMB(
+          (conv1): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv2): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (sca1): LKA(
+            (conv0): Conv2d(48, 48, kernel_size=(5, 5), stride=(1, 1), padding=(2, 2), groups=48)
+            (conv_spatial): Conv2d(48, 48, kernel_size=(7, 7), stride=(1, 1), padding=(9, 9), dilation=(3, 3), groups=48)
+            (conv1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sca2): Sequential(
+            (0): AvgPool2d(kernel_size=[45, 135], base_size=(45, 135), stride=[45, 135], fast_imp=False)
+            (1): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          )
+          (sg): SimpleGate()
+          (conv4): Conv2d(48, 96, kernel_size=(1, 1), stride=(1, 1))
+          (conv5): Conv2d(96, 96, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=96)
+          (conv6): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (norm1): LayerNorm2d()
+          (norm2): LayerNorm2d()
+          (dropout1): Identity()
+          (dropout2): Identity()
+        )
+        (fusion): CVIM(
+          (norm_l): LayerNorm2d()
+          (norm_r): LayerNorm2d()
+          (l_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj1): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (r_proj2): Sequential(
+            (0): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+            (1): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1), groups=48)
+          )
+          (l_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+          (r_proj3): Conv2d(48, 48, kernel_size=(1, 1), stride=(1, 1))
+        )
+      )
+    )
+  )
+  (up): Sequential(
+    (0): Conv2d(48, 48, kernel_size=(3, 3), stride=(1, 1), padding=(1, 1))
+    (1): PixelShuffle(upscale_factor=4)
+  )
+)
+2024-02-13 23:51:44,155 INFO: Model [ImageRestorationModel] is created.
+2024-02-13 23:51:45,376 INFO: Start training from epoch: 0, iter: 0
+2024-02-13 23:52:29,796 INFO: [CVHSS..][epoch:  1, iter:      50, lr:(1.000e-04,)] [eta: 2 days, 1:42:14, time (data): 0.573 (0.009)] l_pix: 1.7407e-01 
+2024-02-13 23:53:03,914 INFO: [CVHSS..][epoch:  3, iter:     100, lr:(1.000e-04,)] [eta: 1 day, 19:50:58, time (data): 0.571 (0.009)] l_pix: 1.6565e-01 
+2024-02-13 23:53:07,077 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 19.7336	 # ssim: 0.5449
+2024-02-13 23:53:07,086 INFO: [CVHSS..][epoch:  3, iter:     100, lr:(1.000e-04,)] m_psnr: 1.9734e+01 m_ssim: 5.4487e-01 
+2024-02-13 23:53:42,129 INFO: [CVHSS..][epoch:  5, iter:     150, lr:(1.000e-04,)] [eta: 1 day, 19:22:17, time (data): 0.572 (0.009)] l_pix: 1.5332e-01 
+2024-02-13 23:54:16,671 INFO: [CVHSS..][epoch:  7, iter:     200, lr:(1.000e-04,)] [eta: 1 day, 18:06:43, time (data): 0.577 (0.009)] l_pix: 1.8140e-01 
+2024-02-13 23:54:19,621 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 19.9387	 # ssim: 0.5676
+2024-02-13 23:54:19,622 INFO: [CVHSS..][epoch:  7, iter:     200, lr:(1.000e-04,)] m_psnr: 1.9939e+01 m_ssim: 5.6760e-01 
+2024-02-13 23:54:54,510 INFO: [CVHSS..][epoch:  9, iter:     250, lr:(1.000e-04,)] [eta: 1 day, 18:04:46, time (data): 0.577 (0.010)] l_pix: 1.6883e-01 
+2024-02-13 23:55:29,292 INFO: [CVHSS..][epoch: 11, iter:     300, lr:(1.000e-04,)] [eta: 1 day, 17:29:27, time (data): 0.575 (0.009)] l_pix: 1.5802e-01 
+2024-02-13 23:55:32,203 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 19.9953	 # ssim: 0.5781
+2024-02-13 23:55:32,204 INFO: [CVHSS..][epoch: 11, iter:     300, lr:(1.000e-04,)] m_psnr: 1.9995e+01 m_ssim: 5.7806e-01 
+2024-02-13 23:56:06,454 INFO: [CVHSS..][epoch: 13, iter:     350, lr:(1.000e-04,)] [eta: 1 day, 17:26:35, time (data): 0.574 (0.009)] l_pix: 1.7038e-01 
+2024-02-13 23:56:41,103 INFO: [CVHSS..][epoch: 15, iter:     400, lr:(1.000e-04,)] [eta: 1 day, 17:03:26, time (data): 0.576 (0.009)] l_pix: 1.5854e-01 
+2024-02-13 23:56:44,062 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.0194	 # ssim: 0.5823
+2024-02-13 23:56:44,063 INFO: [CVHSS..][epoch: 15, iter:     400, lr:(1.000e-04,)] m_psnr: 2.0019e+01 m_ssim: 5.8233e-01 
+2024-02-13 23:57:18,672 INFO: [CVHSS..][epoch: 17, iter:     450, lr:(1.000e-04,)] [eta: 1 day, 17:06:49, time (data): 0.576 (0.009)] l_pix: 1.4972e-01 
+2024-02-13 23:57:52,876 INFO: [CVHSS..][epoch: 19, iter:     500, lr:(1.000e-04,)] [eta: 1 day, 16:47:05, time (data): 0.575 (0.009)] l_pix: 1.7859e-01 
+2024-02-13 23:57:55,530 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.0372	 # ssim: 0.5854
+2024-02-13 23:57:55,531 INFO: [CVHSS..][epoch: 19, iter:     500, lr:(1.000e-04,)] m_psnr: 2.0037e+01 m_ssim: 5.8539e-01 
+2024-02-13 23:58:30,108 INFO: [CVHSS..][epoch: 21, iter:     550, lr:(1.000e-04,)] [eta: 1 day, 16:49:05, time (data): 0.576 (0.009)] l_pix: 1.5401e-01 
+2024-02-13 23:59:04,939 INFO: [CVHSS..][epoch: 23, iter:     600, lr:(1.000e-04,)] [eta: 1 day, 16:37:22, time (data): 0.576 (0.009)] l_pix: 1.4828e-01 
+2024-02-13 23:59:07,887 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.0589	 # ssim: 0.5884
+2024-02-13 23:59:07,907 INFO: [CVHSS..][epoch: 23, iter:     600, lr:(1.000e-04,)] m_psnr: 2.0059e+01 m_ssim: 5.8837e-01 
+2024-02-13 23:59:42,506 INFO: [CVHSS..][epoch: 25, iter:     650, lr:(1.000e-04,)] [eta: 1 day, 16:41:20, time (data): 0.577 (0.009)] l_pix: 1.6985e-01 
+2024-02-14 00:00:17,564 INFO: [CVHSS..][epoch: 27, iter:     700, lr:(1.000e-04,)] [eta: 1 day, 16:32:45, time (data): 0.575 (0.009)] l_pix: 1.4940e-01 
+2024-02-14 00:00:20,511 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.0868	 # ssim: 0.5913
+2024-02-14 00:00:20,518 INFO: [CVHSS..][epoch: 27, iter:     700, lr:(1.000e-04,)] m_psnr: 2.0087e+01 m_ssim: 5.9130e-01 
+2024-02-14 00:00:55,147 INFO: [CVHSS..][epoch: 29, iter:     750, lr:(1.000e-04,)] [eta: 1 day, 16:36:24, time (data): 0.576 (0.010)] l_pix: 1.3949e-01 
+2024-02-14 00:01:29,663 INFO: [CVHSS..][epoch: 31, iter:     800, lr:(1.000e-04,)] [eta: 1 day, 16:26:48, time (data): 0.576 (0.009)] l_pix: 1.5521e-01 
+2024-02-14 00:01:32,655 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.1183	 # ssim: 0.5948
+2024-02-14 00:01:32,669 INFO: [CVHSS..][epoch: 31, iter:     800, lr:(1.000e-04,)] m_psnr: 2.0118e+01 m_ssim: 5.9482e-01 
+2024-02-14 00:02:07,241 INFO: [CVHSS..][epoch: 33, iter:     850, lr:(1.000e-04,)] [eta: 1 day, 16:30:12, time (data): 0.575 (0.009)] l_pix: 1.6163e-01 
+2024-02-14 00:02:42,004 INFO: [CVHSS..][epoch: 35, iter:     900, lr:(1.000e-04,)] [eta: 1 day, 16:22:48, time (data): 0.576 (0.008)] l_pix: 1.5169e-01 
+2024-02-14 00:02:44,762 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.1520	 # ssim: 0.5983
+2024-02-14 00:02:44,781 INFO: [CVHSS..][epoch: 35, iter:     900, lr:(1.000e-04,)] m_psnr: 2.0152e+01 m_ssim: 5.9833e-01 
+2024-02-14 00:03:19,089 INFO: [CVHSS..][epoch: 37, iter:     950, lr:(9.999e-05,)] [eta: 1 day, 16:24:12, time (data): 0.574 (0.009)] l_pix: 1.5178e-01 
+2024-02-14 00:03:53,896 INFO: [CVHSS..][epoch: 39, iter:   1,000, lr:(9.999e-05,)] [eta: 1 day, 16:17:52, time (data): 0.576 (0.009)] l_pix: 1.5587e-01 
+2024-02-14 00:03:56,857 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.1787	 # ssim: 0.6006
+2024-02-14 00:03:56,858 INFO: [CVHSS..][epoch: 39, iter:   1,000, lr:(9.999e-05,)] m_psnr: 2.0179e+01 m_ssim: 6.0058e-01 
+2024-02-14 00:04:32,426 INFO: [CVHSS..][epoch: 41, iter:   1,050, lr:(9.999e-05,)] [eta: 1 day, 16:23:49, time (data): 0.575 (0.008)] l_pix: 1.6904e-01 
+2024-02-14 00:05:06,750 INFO: [CVHSS..][epoch: 43, iter:   1,100, lr:(9.999e-05,)] [eta: 1 day, 16:16:31, time (data): 0.575 (0.009)] l_pix: 1.5902e-01 
+2024-02-14 00:05:09,570 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.1978	 # ssim: 0.6020
+2024-02-14 00:05:09,585 INFO: [CVHSS..][epoch: 43, iter:   1,100, lr:(9.999e-05,)] m_psnr: 2.0198e+01 m_ssim: 6.0198e-01 
+2024-02-14 00:05:45,200 INFO: [CVHSS..][epoch: 45, iter:   1,150, lr:(9.999e-05,)] [eta: 1 day, 16:21:40, time (data): 0.575 (0.009)] l_pix: 1.4901e-01 
+2024-02-14 00:06:19,721 INFO: [CVHSS..][epoch: 47, iter:   1,200, lr:(9.999e-05,)] [eta: 1 day, 16:15:30, time (data): 0.574 (0.009)] l_pix: 1.4871e-01 
+2024-02-14 00:06:22,640 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.2169	 # ssim: 0.6034
+2024-02-14 00:06:22,656 INFO: [CVHSS..][epoch: 47, iter:   1,200, lr:(9.999e-05,)] m_psnr: 2.0217e+01 m_ssim: 6.0343e-01 
+2024-02-14 00:06:56,928 INFO: [CVHSS..][epoch: 49, iter:   1,250, lr:(9.999e-05,)] [eta: 1 day, 16:16:53, time (data): 0.576 (0.009)] l_pix: 1.4094e-01 
+2024-02-14 00:07:31,326 INFO: [CVHSS..][epoch: 51, iter:   1,300, lr:(9.999e-05,)] [eta: 1 day, 16:10:59, time (data): 0.575 (0.009)] l_pix: 1.4988e-01 
+2024-02-14 00:07:34,196 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.2290	 # ssim: 0.6041
+2024-02-14 00:07:34,197 INFO: [CVHSS..][epoch: 51, iter:   1,300, lr:(9.999e-05,)] m_psnr: 2.0229e+01 m_ssim: 6.0412e-01 
+2024-02-14 00:08:08,137 INFO: [CVHSS..][epoch: 53, iter:   1,350, lr:(9.999e-05,)] [eta: 1 day, 16:11:23, time (data): 0.575 (0.009)] l_pix: 1.6402e-01 
+2024-02-14 00:08:43,968 INFO: [CVHSS..][epoch: 55, iter:   1,400, lr:(9.999e-05,)] [eta: 1 day, 16:09:23, time (data): 0.576 (0.009)] l_pix: 1.5155e-01 
+2024-02-14 00:08:46,962 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.2463	 # ssim: 0.6057
+2024-02-14 00:08:46,979 INFO: [CVHSS..][epoch: 55, iter:   1,400, lr:(9.999e-05,)] m_psnr: 2.0246e+01 m_ssim: 6.0568e-01 
+2024-02-14 00:09:20,999 INFO: [CVHSS..][epoch: 57, iter:   1,450, lr:(9.999e-05,)] [eta: 1 day, 16:10:14, time (data): 0.577 (0.009)] l_pix: 1.5091e-01 
+2024-02-14 00:09:54,876 INFO: [CVHSS..][epoch: 59, iter:   1,500, lr:(9.999e-05,)] [eta: 1 day, 16:04:01, time (data): 0.575 (0.009)] l_pix: 1.3724e-01 
+2024-02-14 00:09:57,857 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.2591	 # ssim: 0.6072
+2024-02-14 00:09:57,873 INFO: [CVHSS..][epoch: 59, iter:   1,500, lr:(9.999e-05,)] m_psnr: 2.0259e+01 m_ssim: 6.0722e-01 
+2024-02-14 00:10:32,519 INFO: [CVHSS..][epoch: 61, iter:   1,550, lr:(9.999e-05,)] [eta: 1 day, 16:06:13, time (data): 0.575 (0.009)] l_pix: 1.5149e-01 
+2024-02-14 00:11:07,767 INFO: [CVHSS..][epoch: 63, iter:   1,600, lr:(9.998e-05,)] [eta: 1 day, 16:03:16, time (data): 0.576 (0.009)] l_pix: 1.5713e-01 
+2024-02-14 00:11:10,817 INFO: Validation Flickr1024-sr-test_baseline, 		 # psnr: 20.2728	 # ssim: 0.6075
+2024-02-14 00:11:10,826 INFO: [CVHSS..][epoch: 63, iter:   1,600, lr:(9.998e-05,)] m_psnr: 2.0273e+01 m_ssim: 6.0751e-01 
+2024-02-14 00:11:45,050 INFO: [CVHSS..][epoch: 65, iter:   1,650, lr:(9.998e-05,)] [eta: 1 day, 16:04:33, time (data): 0.574 (0.009)] l_pix: 1.3018e-01 

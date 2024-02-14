@@ -5,7 +5,7 @@
 # Copyright 2018-2020 BasicSR Authors
 # ------------------------------------------------------------------------
 # general settings
-name: CVHSSR-S_x4_finetuning_all_1
+name: CVHSSR-S_x4_baseline
 model_type: ImageRestorationModel
 scale: 4
 num_gpu: 2
@@ -15,8 +15,8 @@ datasets:
   train:
     name: Flickr1024-sr-train
     type: PairedStereoImageDataset
-    dataroot_gt: ./data/Flickr1024/trainx4
-    dataroot_lq: ./data/Flickr1024/trainx4
+    dataroot_gt: ./dataset/Train/HR
+    dataroot_lq: ./dataset/Train/LR_x4
     io_backend:
       type: disk
 
@@ -37,8 +37,8 @@ datasets:
   val:
     name: Flickr1024-sr-test
     type: PairedStereoImageDataset
-    dataroot_gt: ./data/Flickr1024/validation/hr
-    dataroot_lq: ./data/Flickr1024/validation/lr_x4
+    dataroot_gt: ./dataset/val/HR
+    dataroot_lq: ./dataset/val/LR_x4
     io_backend:
       type: disk
 
@@ -54,7 +54,7 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: ./models/net_g_latest.pth
+  pretrain_network_g:
   strict_load_g: true
   resume_state: ~
 
@@ -103,7 +103,7 @@ logger:
   save_checkpoint_freq: !!float 1e4
   use_tb_logger: true
   wandb:
-    project: ~
+    project: CVHSSR_S_baseline
     resume_id: ~
 
 # dist training settings

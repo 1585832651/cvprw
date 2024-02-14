@@ -12,6 +12,12 @@ import random
 import time
 import torch
 from os import path as osp
+import sys
+import os
+
+# 假设`basicsr`位于你的项目根目录下
+project_root = '/root/autodl-tmp/CVHSSR/'  # 更改为你的项目根目录路径
+sys.path.append(os.path.abspath(project_root))
 
 from basicsr.data import create_dataloader, create_dataset
 from basicsr.data.data_sampler import EnlargedSampler
@@ -269,6 +275,8 @@ def main():
                 use_image = opt['val'].get('use_image', True)
                 model.validation(val_loader, current_iter, tb_logger,
                                  opt['val']['save_img'], rgb2bgr, use_image )
+                
+                print("111111111111")
                 log_vars = {'epoch': epoch, 'iter': current_iter, 'total_iter': total_iters}
                 log_vars.update({'lrs': model.get_current_learning_rate()})
                 log_vars.update(model.get_current_log())

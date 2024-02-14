@@ -1,0 +1,143 @@
+2024-02-13 19:49:26,301 INFO: 
+                ____                _       _____  ____
+               / __ ) ____ _ _____ (_)_____/ ___/ / __ \
+              / __  |/ __ `// ___// // ___/\__ \ / /_/ /
+             / /_/ // /_/ /(__  )/ // /__ ___/ // _, _/
+            /_____/ \__,_//____//_/ \___//____//_/ |_|
+     ______                   __   __                 __      __
+    / ____/____   ____   ____/ /  / /   __  __ _____ / /__   / /
+   / / __ / __ \ / __ \ / __  /  / /   / / / // ___// //_/  / /
+  / /_/ // /_/ // /_/ // /_/ /  / /___/ /_/ // /__ / /<    /_/
+  \____/ \____/ \____/ \____/  /_____/\____/ \___//_/|_|  (_)
+    
+Version Information: 
+	BasicSR: 1.2.0+50cb149
+	PyTorch: 1.11.0+cu113
+	TorchVision: 0.12.0+cu113
+2024-02-13 19:49:26,301 INFO: 
+  name: CVHSSR-T_x4_baseline
+  model_type: ImageRestorationModel
+  scale: 4
+  num_gpu: 2
+  manual_seed: 10
+  datasets:[
+    train:[
+      name: Flickr1024-sr-train_baseline
+      type: PairedStereoImageDataset
+      dataroot_gt: ./dataset/Train/HR
+      dataroot_lq: ./dataset/Train/LR_x4
+      io_backend:[
+        type: disk
+      ]
+      gt_size_h: 120
+      gt_size_w: 360
+      use_hflip: True
+      use_vflip: True
+      use_rot: False
+      flip_RGB: True
+      use_shuffle: True
+      num_worker_per_gpu: 8
+      batch_size_per_gpu: 32
+      dataset_enlarge_ratio: 1
+      prefetch_mode: None
+      phase: train
+      scale: 4
+    ]
+    val:[
+      name: Flickr1024-sr-test_baseline
+      type: PairedStereoImageDataset
+      dataroot_gt: ./dataset/Train/HR
+      dataroot_lq: ./dataset/Train/LR_x4
+      io_backend:[
+        type: disk
+      ]
+      phase: val
+      scale: 4
+    ]
+  ]
+  network_g:[
+    type: CVHSSR
+    up_scale: 4
+    width: 48
+    num_blks: 16
+    drop_path_rate: 0
+    train_size: [1, 6, 30, 90]
+    drop_out_rate: 0.0
+  ]
+  path:[
+    pretrain_network_g: None
+    strict_load_g: True
+    resume_state: None
+    root: /root/autodl-tmp/CVHSSR
+    experiments_root: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline
+    models: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline/models
+    training_states: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline/training_states
+    log: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline
+    visualization: /root/autodl-tmp/CVHSSR/experiments/CVHSSR-T_x4_baseline/visualization
+  ]
+  train:[
+    optim_g:[
+      type: Lion
+      lr: 0.0001
+      weight_decay: 0.0
+      betas: [0.9, 0.9]
+    ]
+    scheduler:[
+      type: TrueCosineAnnealingLR
+      T_max: 200000
+      eta_min: 1e-08
+    ]
+    total_iter: 200000
+    warmup_iter: -1
+    mixup: False
+    pixel_opt:[
+      type: ComposeLoss
+      loss_weight: 0.01
+      reduction: mean
+    ]
+  ]
+  val:[
+    val_freq: 1000.0
+    save_img: False
+    trans_num: 1
+    max_minibatch: 1
+    metrics:[
+      psnr:[
+        type: calculate_psnr
+        crop_border: 0
+        test_y_channel: False
+      ]
+      ssim:[
+        type: calculate_skimage_ssim
+      ]
+    ]
+  ]
+  logger:[
+    print_freq: 200
+    save_checkpoint_freq: 10000.0
+    use_tb_logger: True
+    wandb:[
+      project: CVHSSR_T_baseline
+      resume_id: None
+    ]
+  ]
+  dist_params:[
+    backend: nccl
+    port: 29500
+  ]
+  is_train: True
+  dist: True
+  rank: 0
+  world_size: 1
+
+2024-02-13 19:49:31,577 INFO: Use wandb logger with id=cueqttge; project=CVHSSR_T_baseline.
+2024-02-13 19:49:31,581 INFO: Dataset PairedStereoImageDataset - Flickr1024-sr-train_baseline is created.
+2024-02-13 19:49:31,582 INFO: Training statistics:
+	Number of train images: 1600
+	Dataset enlarge ratio: 1
+	Batch size per gpu: 32
+	World size (gpu number): 1
+	Require iter number per epoch: 50
+	Total epochs: 4000; iters: 200000.
+2024-02-13 19:49:31,583 INFO: Dataset PairedStereoImageDataset - Flickr1024-sr-test_baseline is created.
+2024-02-13 19:49:31,583 INFO: Number of val images/folders in Flickr1024-sr-test_baseline: 1600
