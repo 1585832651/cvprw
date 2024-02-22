@@ -16,7 +16,7 @@ import sys
 import os
 
 # 假设`basicsr`位于你的项目根目录下
-project_root = '/home/zsy/project/zyk/CVHSSR_mine/'  # 更改为你的项目根目录路径
+project_root = '/root/autodl-tmp/cvprw/'  # 更改为你的项目根目录路径
 sys.path.append(os.path.abspath(project_root))
 
 from basicsr.data import create_dataloader, create_dataset
