@@ -68,7 +68,7 @@ def main():
             current_iter=opt['name'],
             tb_logger=None,
             save_img=opt['val']['save_img'],
-            rgb2bgr=rgb2bgr, use_image=use_image)
+            rgb2bgr=rgb2bgr, use_image=use_image,YCC= True)
 
 
 if __name__ == '__main__':

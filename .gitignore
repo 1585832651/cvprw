@@ -1,1 +1,14 @@
 dataset/
+tb_logger/
+experiments/
+.pyc
+*.pyc
+wandb/
+.png
+basicsr/models/__pycache__/
+basicsr/utils/__pycache__/
+basicsr/data/__pycache__/
+basicsr/data/__pycache__/*.pyc
+basicsr/data/__pycache__/data_sampler.cpython-37.pyc
+basicsr/models/__pycache__
+basicsr/metrics/__pycache__
