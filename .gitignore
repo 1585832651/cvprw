@@ -1,1 +1,10 @@
 dataset/
+tb_logger/
+experiments/
+.pyc
+*.pyc
+wandb/
+.png
+basicsr/models/__pycache__/
+basicsr/metrics/__pycache__/
+basicsr/utils/__pycache__/
