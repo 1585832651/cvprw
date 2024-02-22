@@ -5,10 +5,10 @@
 # Copyright 2018-2020 BasicSR Authors
 # ------------------------------------------------------------------------
 # general settings
-name: CVHSSR-T_x4_baseline
+name: CVHSSR-T_x4_YCC_baseline_onzju
 model_type: ImageRestorationModel
 scale: 4
-num_gpu: 1
+num_gpu: 2
 manual_seed: 10
 
 datasets:
@@ -19,7 +19,7 @@ datasets:
     dataroot_lq: ./dataset/Train/LR_x4
     io_backend:
       type: disk
-
+    ycc : false
     gt_size_h: 120
     gt_size_w: 360
     use_hflip: true
@@ -41,10 +41,11 @@ datasets:
     dataroot_lq: ./dataset/val/LR_x4
     io_backend:
       type: disk
+    ycc : false
 
 # network structures
 network_g:
-  type: CVHSSR
+  type: CVHSSR_ycc
   up_scale: 4
   width: 48
   num_blks: 16
@@ -84,7 +85,7 @@ train:
 # validation settings
 val:
   val_freq: !!float 1e4
-  save_img: false
+  save_img: true
   trans_num: 1
 
   max_minibatch: 1
@@ -103,7 +104,7 @@ logger:
   save_checkpoint_freq: !!float 1e4
   use_tb_logger: true
   wandb:
-    project: CVHSSR_T_baseline
+    project: CVHSSR_1
     resume_id: ~
 
 # dist training settings

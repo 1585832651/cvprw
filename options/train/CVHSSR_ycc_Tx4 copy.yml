@@ -5,8 +5,8 @@
 # Copyright 2018-2020 BasicSR Authors
 # ------------------------------------------------------------------------
 # general settings
-name: CVHSSR-S_x4_baseline
-model_type: ImageRestorationModel
+name: CVHSSR-T_x4_YCC_baseline
+model_type: ImageRestoration_yccModel
 scale: 4
 num_gpu: 2
 manual_seed: 10
@@ -19,7 +19,7 @@ datasets:
     dataroot_lq: ./dataset/Train/LR_x4
     io_backend:
       type: disk
-
+    ycc : true
     gt_size_h: 120
     gt_size_w: 360
     use_hflip: true
@@ -29,7 +29,7 @@ datasets:
 
     # data loader
     use_shuffle: true
-    num_worker_per_gpu: 8
+    num_worker_per_gpu: 12
     batch_size_per_gpu: 12
     dataset_enlarge_ratio: 1
     prefetch_mode: ~
@@ -39,22 +39,24 @@ datasets:
     type: PairedStereoImageDataset
     dataroot_gt: ./dataset/val/HR
     dataroot_lq: ./dataset/val/LR_x4
+    rgb2bgr: false
     io_backend:
       type: disk
+    ycc : true
 
 # network structures
 network_g:
-  type: CVHSSR
+  type: CVHSSR_ycc
   up_scale: 4
-  width: 64
-  num_blks: 32
-  drop_path_rate: 0.1
+  width: 48
+  num_blks: 16
+  drop_path_rate: 0
   train_size: [1, 6, 30, 90]
   drop_out_rate: 0.
 
 # path
 path:
-  pretrain_network_g:
+  pretrain_network_g: 
   strict_load_g: true
   resume_state: ~
 
@@ -84,7 +86,7 @@ train:
 # validation settings
 val:
   val_freq: !!float 1e4
-  save_img: false
+  save_img: True
   trans_num: 1
 
   max_minibatch: 1

@@ -13,38 +13,44 @@ manual_seed: 10
 
 # dataset and data loader settings
 datasets:
-  test0:
-    name: KITTI2012
-    type: PairedStereoImageDataset
-    dataroot_gt: /home/h11ssl-i/data/Stereo_test/KITTI2012/hr
-    dataroot_lq: /home/h11ssl-i/data/Stereo_test/KITTI2012/lr_x4
-    io_backend:
-      type: disk
+  # test0:
+  #   name: KITTI2012
+  #   type: PairedStereoImageDataset
+  #   dataroot_gt: /home/h11ssl-i/data/Stereo_test/KITTI2012/hr
+  #   dataroot_lq: /home/h11ssl-i/data/Stereo_test/KITTI2012/lr_x4
+  #   io_backend:
+  #     type: disk
 
-  test1:
-    name: KITTI2015
-    type: PairedStereoImageDataset
-    dataroot_gt: /home/h11ssl-i/data/Stereo_test/KITTI2015/hr
-    dataroot_lq: /home/h11ssl-i/data/Stereo_test/KITTI2015/lr_x4
-    io_backend:
-      type: disk
+  # test1:
+  #   name: KITTI2015
+  #   type: PairedStereoImageDataset
+  #   dataroot_gt: /home/h11ssl-i/data/Stereo_test/KITTI2015/hr
+  #   dataroot_lq: /home/h11ssl-i/data/Stereo_test/KITTI2015/lr_x4
+  #   io_backend:
+  #     type: disk
     
-  test2:
-    name: Middlebury
-    type: PairedStereoImageDataset
-    dataroot_gt: /home/h11ssl-i/data/Stereo_test/Middlebury/hr
-    dataroot_lq: /home/h11ssl-i/data/Stereo_test/Middlebury/lr_x4
-    io_backend:
-      type: disk
+  # test2:
+  #   name: Middlebury
+  #   type: PairedStereoImageDataset
+  #   dataroot_gt: /home/h11ssl-i/data/Stereo_test/Middlebury/hr
+  #   dataroot_lq: /home/h11ssl-i/data/Stereo_test/Middlebury/lr_x4
+  #   io_backend:
+  #     type: disk
   
-  test3:
+  # test3:
+  #   name: Flickr1024
+  #   type: PairedStereoImageDataset
+  #   dataroot_gt: /home/h11ssl-i/data/Stereo_test/Flickr1024/hr
+  #   dataroot_lq: /home/h11ssl-i/data/Stereo_test/Flickr1024/lr_x4
+  #   io_backend:
+  #     type: disk
+  test:
     name: Flickr1024
     type: PairedStereoImageDataset
-    dataroot_gt: /home/h11ssl-i/data/Stereo_test/Flickr1024/hr
-    dataroot_lq: /home/h11ssl-i/data/Stereo_test/Flickr1024/lr_x4
+    dataroot_gt: dataset/val/HR
+    dataroot_lq: dataset/val/LR_x4
     io_backend:
       type: disk
-
 # network structures
 network_g:
   type: CVHSSR
@@ -58,7 +64,7 @@ network_g:
 
 # path
 path:
-  pretrain_network_g: /home/h11ssl-i/zwb/CVHSSR/pre_train_ckpt/CVHSSR_Tx4.pth
+  pretrain_network_g: experiments/CVHSSR-T_x4_YCC/models/net_g_90000.pth
   strict_load_g: true
   resume_state: ~
 
