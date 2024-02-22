@@ -25,15 +25,17 @@ def rgb_to_ycbcr(img):
 def convert_stereo_rgb_to_ycbcr(img):
     """Assuming img is a concatenated stereo image (left and right) in RGB format."""
     H, W, C = img.shape
+    #print("img.shape",img.shape)
     # Split the stereo image into left and right images
-    img_L = img[ :,:,:C//2 ]
-    img_R = img[ :,:,C//2: ]
+    img_L = img[:, :,:C//2 ]
+    img_R = img[:, :, C//2:]
+    #print("img_L.shape",img_L.shape)
     # Convert both images to YCbCr
     img_L_ycbcr = rgb_to_ycbcr(img_L)
     img_R_ycbcr = rgb_to_ycbcr(img_R)
     
     # Concatenate the converted images back
-    img_ycbcr = np.concatenate([img_L_ycbcr, img_R_ycbcr], axis=2)
+    img_ycbcr = np.concatenate([img_L_ycbcr, img_R_ycbcr], axis=1)
     return img_ycbcr
 
 class PairedImageSRLRDataset(data.Dataset):
@@ -338,17 +340,13 @@ class PairedStereoImageDataset(data.Dataset):
 
 
             img_gt, img_lq = imgs
-        if self.ycc == True:
+        img_gt = convert_stereo_rgb_to_ycbcr(img_gt)
+        img_lq = convert_stereo_rgb_to_ycbcr(img_lq)
 
-            img_gt = convert_stereo_rgb_to_ycbcr(img_gt)
-            img_lq = convert_stereo_rgb_to_ycbcr(img_lq)
-            img_gt, img_lq = img2tensor([img_gt, img_lq],
-                                        bgr2rgb=False,
-                                        float32=True)
-        else:
-            img_gt, img_lq = img2tensor([img_gt, img_lq],
-                                        bgr2rgb=True,
-                                        float32=True)
+
+        img_gt, img_lq = img2tensor([img_gt, img_lq],
+                                    bgr2rgb=True,
+                                    float32=True)
         # normalize
         if self.mean is not None or self.std is not None:
             normalize(img_lq, self.mean, self.std, inplace=True)

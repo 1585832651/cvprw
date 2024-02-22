@@ -11,21 +11,32 @@ from collections import OrderedDict
 from copy import deepcopy
 from os import path as osp
 from tqdm import tqdm
+import cv2
+
 
 from basicsr.models.archs import define_network
 from basicsr.models.base_model import BaseModel
 from basicsr.utils import get_root_logger, imwrite, tensor2img
 from basicsr.utils.dist_util import get_dist_info
 from torch.optim.optimizer import Optimizer
-
+import numpy as np
 loss_module = importlib.import_module('basicsr.models.losses')
 metric_module = importlib.import_module('basicsr.metrics')
 
-class ImageRestorationModel(BaseModel):
+# 函数：将tensor图像从YCbCr转换为RGB
+
+def convert_ycbcr_to_rgb(ycbcr_img):
+    """
+    Convert YCbCr image to RGB. The input image is expected to be in the scale of 0-255.
+    """
+    # OpenCV conversion function expects the image in YCrCb order
+    rgb_img = cv2.cvtColor(ycbcr_img.astype(np.uint8), cv2.COLOR_YCrCb2RGB)
+    return rgb_img
+class ImageRestoration_yccModel(BaseModel):
     """Base Deblur model for single image deblur."""
 
     def __init__(self, opt):
-        super(ImageRestorationModel, self).__init__(opt)
+        super(ImageRestoration_yccModel, self).__init__(opt)
 
         # define network
         self.net_g = define_network(deepcopy(opt['network_g']))
@@ -204,13 +215,13 @@ class ImageRestorationModel(BaseModel):
         #     preds_y = [preds_y]
 
         self.output = preds[-1]
-       #self.output_y = preds_y[-1]
+       # self.output_y = preds_y[-1]
 
         l_total = 0
         loss_dict = OrderedDict()
         # pixel loss
        
-        #y_tgt = torch.cat([self.gt[:, 0:1, :, :], self.gt[:, 3:4, :, :]], dim=1)
+     #   y_tgt = torch.cat([self.gt[:, 0:1, :, :], self.gt[:, 3:4, :, :]], dim=1)
 
         if self.cri_pix:
             l_pix = 0.
@@ -266,7 +277,7 @@ class ImageRestorationModel(BaseModel):
                 j = i + m
                 if j >= n:
                     j = n
-                pred = self.net_g(self.lq[i:j])
+                pred,_ = self.net_g(self.lq[i:j])
                 if isinstance(pred, list):
                     pred = pred[-1]
                 outs.append(pred.detach().cpu())
@@ -274,7 +285,172 @@ class ImageRestorationModel(BaseModel):
 
             self.output = torch.cat(outs, dim=0)
         self.net_g.train()
+    def test_ycc(self):
+        self.net_g.eval()
+        with torch.no_grad():
+            n = len(self.lq)
+            outs = []
+            m = self.opt['val'].get('max_minibatch', n)
+            i = 0
+            while i < n:
+                j = i + m
+                if j >= n:
+                    j = n
+                pred ,_= self.net_g(self.lq[i:j])
+                if isinstance(pred, list):
+                    pred = pred[-1]
+                outs.append(pred.detach().cpu())
+                i = j
 
+            self.output = torch.cat(outs, dim=0)
+            self.net_g.train()
+
+    def dist_validation_ycc(self, dataloader, current_iter, tb_logger, save_img, rgb2bgr, use_image):
+        dataset_name = dataloader.dataset.opt['name']
+        with_metrics = self.opt['val'].get('metrics') is not None
+        if with_metrics:
+            self.metric_results = {
+                metric: 0
+                for metric in self.opt['val']['metrics'].keys()
+            }
+
+        rank, world_size = get_dist_info()
+        if rank == 0:
+            pbar = tqdm(total=len(dataloader), unit='image')
+
+        cnt = 0
+
+        for idx, val_data in enumerate(dataloader):
+            if idx % world_size != rank:
+                continue
+
+            img_name = osp.splitext(osp.basename(val_data['lq_path'][0]))[0]
+
+            self.feed_data(val_data, is_val=True)
+            if self.opt['val'].get('grids', False):
+                self.grids()
+
+            self.test_ycc()
+
+            if self.opt['val'].get('grids', False):
+                self.grids_inverse()
+            visuals = self.get_current_visuals()
+            sr_img = tensor2img([visuals['result']], rgb2bgr=rgb2bgr)
+            if 'gt' in visuals:
+                gt_img = tensor2img([visuals['gt']], rgb2bgr=rgb2bgr)
+                del self.gt
+            print("rgb2bgr",rgb2bgr)
+            sr_y1, sr_cb1, sr_cr1, sr_y2, sr_cb2, sr_cr2 = sr_img[..., 0], sr_img[..., 1], sr_img[..., 2], sr_img[..., 3], sr_img[..., 4], sr_img[..., 5]
+           # Split the YCbCr images into individual channels
+            gt_y1, gt_cb1, gt_cr1, gt_y2, gt_cb2, gt_cr2 = gt_img[..., 0], gt_img[..., 1], gt_img[..., 2], gt_img[..., 3], gt_img[..., 4], gt_img[..., 5]
+
+            # 将每个通道重组为YCbCr图像
+            sr_ycbcr1 = np.stack((sr_y1, sr_cb1, sr_cr1), axis=-1)
+            sr_ycbcr2 = np.stack((sr_y2, sr_cb2, sr_cr2), axis=-1)
+            gt_ycbcr1 = np.stack((gt_y1, gt_cb1, gt_cr1), axis=-1)
+            gt_ycbcr2 = np.stack((gt_y2, gt_cb2, gt_cr2), axis=-1)
+            # Convert each set of Y, Cb, and Cr channels into RGB format
+
+            # 转换为RGB
+            sr_rgb1 = convert_ycbcr_to_rgb(sr_ycbcr1)
+            sr_rgb2 = convert_ycbcr_to_rgb(sr_ycbcr2)
+            gt_rgb1 = convert_ycbcr_to_rgb(gt_ycbcr1)
+            gt_rgb2 = convert_ycbcr_to_rgb(gt_ycbcr2)
+            sr_img = np.concatenate((sr_rgb1, sr_rgb2), axis=-1)
+            gt_img = np.concatenate((gt_rgb1, gt_rgb2), axis=-1)
+            # Convert back to tensors
+            # sr_img = torch.from_numpy(sr_rgb_stacked).float() / 255.0
+            # gt_img = torch.from_numpy(gt_rgb_stacked).float() / 255.0
+            # tentative for out of GPU memory
+            del self.lq
+            del self.output
+            torch.cuda.empty_cache()
+
+            if save_img:
+                if sr_img.shape[2] == 6:
+                    L_img = sr_img[:, :, :3]
+                    R_img = sr_img[:, :, 3:]
+                    # visual_dir = osp.join('visual_results', dataset_name, self.opt['name'])
+                    visual_dir = osp.join(self.opt['path']['visualization'], dataset_name)
+                    imwrite(L_img, osp.join(visual_dir, f'{str(img_name).zfill(4)}_L.png'))
+                    imwrite(R_img, osp.join(visual_dir, f'{str(img_name).zfill(4)}_R.png'))
+                else:
+                    if self.opt['is_train']:
+
+                        save_img_path = osp.join(self.opt['path']['visualization'],
+                                                 img_name,
+                                                 f'{img_name}_{current_iter}.png')
+
+                        save_gt_img_path = osp.join(self.opt['path']['visualization'],
+                                                 img_name,
+                                                 f'{img_name}_{current_iter}_gt.png')
+                    else:
+                        save_img_path = osp.join(
+                            self.opt['path']['visualization'], dataset_name,
+                            f'{img_name}.png')
+                        save_gt_img_path = osp.join(
+                            self.opt['path']['visualization'], dataset_name,
+                            f'{img_name}_gt.png')
+
+                    imwrite(sr_img, save_img_path)
+                    imwrite(gt_img, save_gt_img_path)
+
+
+
+            if with_metrics:
+        
+                # calculate metrics
+                opt_metric = deepcopy(self.opt['val']['metrics'])
+                if use_image:
+                    for name, opt_ in opt_metric.items():
+                        metric_type = opt_.pop('type')
+                        self.metric_results[name] += getattr(
+                            metric_module, metric_type)(sr_img, gt_img, **opt_)
+                else:
+                    for name, opt_ in opt_metric.items():
+                        metric_type = opt_.pop('type')
+                        self.metric_results[name] += getattr(
+                            metric_module, metric_type)(visuals['result'], visuals['gt'], **opt_)
+
+            cnt += 1
+            if rank == 0:
+                for _ in range(world_size):
+                    pbar.update(1)
+                    pbar.set_description(f'Test {img_name}')
+        if rank == 0:
+            pbar.close()
+
+        # current_metric = 0.
+        collected_metrics = OrderedDict()
+        if with_metrics:
+            for metric in self.metric_results.keys():
+                collected_metrics[metric] = torch.tensor(self.metric_results[metric]).float().to(self.device)
+            collected_metrics['cnt'] = torch.tensor(cnt).float().to(self.device)
+
+            self.collected_metrics = collected_metrics
+        
+        keys = []
+        metrics = []
+        for name, value in self.collected_metrics.items():
+            keys.append(name)
+            metrics.append(value)
+        metrics = torch.stack(metrics, 0)
+        torch.distributed.reduce(metrics, dst=0)
+        if self.opt['rank'] == 0:
+            metrics_dict = {}
+            cnt = 0
+            for key, metric in zip(keys, metrics):
+                if key == 'cnt':
+                    cnt = float(metric)
+                    continue
+                metrics_dict[key] = float(metric)
+
+            for key in metrics_dict:
+                metrics_dict[key] /= cnt
+
+            self._log_validation_metric_values(current_iter, dataloader.dataset.opt['name'],
+                                               tb_logger, metrics_dict)
+        return 0.
     def dist_validation(self, dataloader, current_iter, tb_logger, save_img, rgb2bgr, use_image):
         dataset_name = dataloader.dataset.opt['name']
         with_metrics = self.opt['val'].get('metrics') is not None

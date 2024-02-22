@@ -16,7 +16,7 @@ import sys
 import os
 
 # 假设`basicsr`位于你的项目根目录下
-project_root = '/root/autodl-tmp/CVHSSR/'  # 更改为你的项目根目录路径
+project_root = '/home/zsy/project/zyk/CVHSSR_mine/'  # 更改为你的项目根目录路径
 sys.path.append(os.path.abspath(project_root))
 
 from basicsr.data import create_dataloader, create_dataset
@@ -157,7 +157,7 @@ def main():
     # torch.backends.cudnn.deterministic = True
 
     # automatic resume ..
-    state_folder_path = 'experiments/{}/training_states/'.format(opt['name'])
+    state_folder_path =""#"experiments/CVHSSR-T_x4_YCC/training_states" #'experiments/{}/training_states/'.format(opt['name'])
     import os
     try:
         states = os.listdir(state_folder_path)
@@ -229,6 +229,7 @@ def main():
         f'Start training from epoch: {start_epoch}, iter: {current_iter}')
     data_time, iter_time = time.time(), time.time()
     start_time = time.time()
+    isycc = opt["datasets"]["train"]["ycc"]
 
     # for epoch in range(start_epoch, total_epochs + 1):
     epoch = start_epoch
@@ -266,7 +267,6 @@ def main():
             if current_iter % opt['logger']['save_checkpoint_freq'] == 0:
                 logger.info('Saving models and training states.')
                 model.save(epoch, current_iter)
-
             # validation
             if opt.get('val') is not None and (current_iter % opt['val']['val_freq'] == 0 or current_iter == 1000):
             # if opt.get('val') is not None and (current_iter % opt['val']['val_freq'] == 0):
@@ -274,9 +274,8 @@ def main():
                 # wheather use uint8 image to compute metrics
                 use_image = opt['val'].get('use_image', True)
                 model.validation(val_loader, current_iter, tb_logger,
-                                 opt['val']['save_img'], rgb2bgr, use_image )
+                                 opt['val']['save_img'], rgb2bgr, use_image,YCC = isycc )
                 
-                print("111111111111")
                 log_vars = {'epoch': epoch, 'iter': current_iter, 'total_iter': total_iters}
                 log_vars.update({'lrs': model.get_current_learning_rate()})
                 log_vars.update(model.get_current_log())
@@ -300,7 +299,7 @@ def main():
         rgb2bgr = opt['val'].get('rgb2bgr', True)
         use_image = opt['val'].get('use_image', True)
         metric = model.validation(val_loader, current_iter, tb_logger,
-                         opt['val']['save_img'], rgb2bgr, use_image)
+                         opt['val']['save_img'], rgb2bgr, use_image,YCC=isycc)
         # if tb_logger:
         #     print('xxresult! ', opt['name'], ' ', metric)
     if tb_logger:
