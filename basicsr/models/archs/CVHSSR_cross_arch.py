@@ -7,6 +7,59 @@ import torch.nn.functional as F
 import numpy as np
 from cross_view import SCAM as scam
 
+class attention2d(nn.Module):
+    def __init__(self, in_planes, K,):
+        super(attention2d, self).__init__()
+        self.avgpool = nn.AdaptiveAvgPool2d(1)
+        self.fc1 = nn.Conv2d(in_planes, K, 1,)
+        self.fc2 = nn.Conv2d(K, K, 1,)
+    def forward(self, x):
+        x = self.avgpool(x)
+        x = self.fc1(x)
+        x = F.relu(x)
+        x = self.fc2(x).view(x.size(0), -1)
+        return F.softmax(x, 1)
+class Dynamic_conv2d(nn.Module):
+    def __init__(self, in_planes, out_planes, kernel_size, stride=1, padding=0, dilation=1, groups=1, bias=True, K=3, ):
+        super(Dynamic_conv2d, self).__init__()
+        assert in_planes % groups == 0
+        self.in_planes = in_planes
+        self.out_planes = out_planes
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.dilation = dilation
+        self.groups = groups
+        self.bias = bias
+        self.K = K
+        self.attention = attention2d(in_planes, K, )
+
+        self.weight = nn.Parameter(torch.Tensor(K, out_planes, in_planes // groups, kernel_size, kernel_size),
+                                   requires_grad=True)
+        if bias:
+            self.bias = nn.Parameter(torch.Tensor(K, out_planes))
+        else:
+            self.bias = None
+
+    def forward(self, x,y): 
+        softmax_attention = self.attention(y)
+        batch_size, in_planes, height, width = x.size()
+        x = x.reshape(1, -1, height, width)  
+        weight = self.weight.view(self.K, -1)
+
+        aggregate_weight = torch.mm(softmax_attention, weight).view(-1, self.in_planes, self.kernel_size,
+                                                                    self.kernel_size)
+        if self.bias is not None:
+            aggregate_bias = torch.mm(softmax_attention, self.bias).view(-1)
+            output = F.conv2d(x, weight=aggregate_weight, bias=aggregate_bias, stride=self.stride, padding=self.padding,
+                              dilation=self.dilation, groups=self.groups * batch_size)
+        else:
+            output = F.conv2d(x, weight=aggregate_weight, bias=None, stride=self.stride, padding=self.padding,
+                              dilation=self.dilation, groups=self.groups * batch_size)
+
+        output = output.view(batch_size, self.out_planes, output.size(-2), output.size(-1))
+        return output
+
 class AvgPool2d(nn.Module):
     def __init__(self, kernel_size=None, base_size=None, auto_pad=True, fast_imp=False, train_size=None):
         super().__init__()
@@ -100,8 +153,8 @@ class Local_Base():
     def convert(self, *args, train_size, **kwargs):
         replace_layers(self, *args, train_size=train_size, **kwargs)
         imgs = torch.rand(train_size)
-        # with torch.no_grad():
-        #     self.forward(imgs)
+        with torch.no_grad():
+            self.forward(imgs)
 
 
 class MySequential(nn.Sequential):
@@ -256,7 +309,6 @@ class CHIMB(nn.Module):  # GFDN
 
     def forward(self, inp):
         x = inp
-
         x = self.norm1(x)
 
         x = self.conv1(x)
@@ -279,17 +331,77 @@ class CHIMB(nn.Module):  # GFDN
         return y + x * self.gamma
 
 
+class CVIM(nn.Module):
+
+    def __init__(self, c):
+        super().__init__()
+        self.scale = c ** -0.5
+
+        self.norm_l = LayerNorm2d(c)
+        self.norm_r = LayerNorm2d(c)
+        self.l_proj1 = nn.Sequential(
+            nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, groups=c, bias=True)
+        )
+        self.r_proj1 = nn.Sequential(
+            nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, groups=c, bias=True)
+        )
+
+        self.beta = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+        self.gamma = nn.Parameter(torch.zeros((1, c, 1, 1)), requires_grad=True)
+
+        self.l_proj2 = nn.Sequential(
+            nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, groups=c, bias=True)
+        )
+        self.r_proj2 = nn.Sequential(
+            nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0, bias=True),
+            nn.Conv2d(c, c, kernel_size=3, stride=1, padding=1, groups=c, bias=True)
+        )
+
+        self.l_proj3 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+        self.r_proj3 = nn.Conv2d(c, c, kernel_size=1, stride=1, padding=0)
+
+        self.l_func = Dynamic_conv2d(in_planes=c,out_planes=c,kernel_size=1,stride=1,padding=0)
+        self.r_func = Dynamic_conv2d(in_planes=c,out_planes=c,kernel_size=1,stride=1,padding=0)
+
+    def forward(self, x_l, x_r):
+        Q_l = self.l_proj1(self.norm_l(x_l)).permute(0, 2, 3, 1)  # B, H, W, c
+        Q_r_T = self.r_proj1(self.norm_r(x_r)).permute(0, 2, 1, 3)  # B, H, c, W (transposed)
+
+        V_l = self.l_proj2(x_l).permute(0, 2, 3, 1)  # B, H, W, c
+        V_r = self.r_proj2(x_r).permute(0, 2, 3, 1)  # B, H, W, c
+
+        # (B, H, W, c) x (B, H, c, W) -> (B, H, W, W)
+        attention = torch.matmul(Q_l, Q_r_T) * self.scale
+
+        F_r2l = torch.matmul(torch.softmax(attention, dim=-1), V_r)  # B, H, W, c
+        F_l2r = torch.matmul(torch.softmax(attention.permute(0, 1, 3, 2), dim=-1), V_l)  # B, H, W, c
+
+        # scale
+        F_r2l = self.l_proj3(F_r2l.permute(0, 3, 1, 2)) * self.beta
+        F_l2r = self.r_proj3(F_l2r.permute(0, 3, 1, 2)) * self.gamma
+        
+        shortcut_lr = F_l2r
+        shortcut_rl = F_r2l
+        DcF_r2l = self.l_func(shortcut_rl,x_l)
+        DcF_l2r = self.r_func(shortcut_lr,x_r)
+       #return x_l + F_r2l, x_r + F_l2r 
+        return x_l + DcF_r2l, x_r + DcF_l2r
+
 class CHIMBSR(nn.Module):
 
     def __init__(self, c, fusion=False):
         super().__init__()
         # self.blk = MAB(c)
         self.blk = CHIMB(c)
-        #self.fusion = CVIM(c) if fusion else None
-        self.fusion = scam(c) if fusion else None
+        self.fusion = CVIM(c) if fusion else None
+        #self.fusion = scam(c) if fusion else None
 
     def forward(self, *feats):
         feats = tuple([self.blk(x) for x in feats])
+
         if self.fusion:
             feats = self.fusion(*feats)
         return feats
@@ -327,7 +439,7 @@ class CVHSR(nn.Module):
                 drop_path_rate,
                 CHIMBSR(
                     width,
-                    fusion=(fusion_from <= i and i <= fusion_to)
+                    fusion=(fusion_from <= i and i <= fusion_to), 
                 )) for i in range(num_blks)]
         )
 
@@ -344,9 +456,17 @@ class CVHSR(nn.Module):
             inp = inp.chunk(2, dim=1)
         else:
             inp = (inp,)
+
         feats = [self.intro(x) for x in inp]
+        # print("feats0.shape",feats[0].shape,feats[1].shape)
+
         feats = self.body(*feats)
+        # print("feats.shape",feats[0].shape,feats[1].shape)
+
+        # print("inp_hr.shape",inp_hr.shape)
+
         out = torch.cat([self.up(x) for x in feats], dim=1)
+
         out = out + inp_hr
         return out
     
